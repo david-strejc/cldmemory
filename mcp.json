@@ -11,7 +11,8 @@
         "OPENAI_API_KEY": "",
         "OPENAI_MODEL": "text-embedding-3-small",
         "MCP_SERVER_NAME": "memory-server",
-        "MCP_SERVER_PORT": "3000"
+        "MCP_SERVER_PORT": "3000",
+        "MEMORY_METADATA": "user:yourname,server:hostname"
       }
     }
   }
