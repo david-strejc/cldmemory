@@ -42,9 +42,9 @@ npm run build
 ### Direct usage with custom connection
 
 ```bash
-# Using custom Qdrant instance
+# Using custom Qdrant instance (supports both HTTP and HTTPS)
 node dist/cli/memory-analytics.js \
-  --url "http://your-qdrant:6333" \
+  --url "https://your-qdrant:6333" \
   --api-key "your-api-key" \
   --collection "your-collection" \
   count

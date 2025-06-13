@@ -46,6 +46,8 @@ A human-like memory system using Qdrant vector database and OpenAI embeddings, a
      -v $(pwd)/qdrant_storage:/qdrant/storage:z \
      qdrant/qdrant
    ```
+   
+   **Note**: Qdrant URL supports both HTTP and HTTPS protocols (e.g., `https://your-qdrant-instance.com:6333`)
 
 4. **Build the project**:
    ```bash
