@@ -20,8 +20,16 @@ class MemoryAnalyticsCLI {
   private collectionName: string;
 
   constructor(config: CliConfig) {
+    // Parse the URL to extract protocol, host, and port
+    const url = new URL(config.qdrantUrl);
+    const isHttps = url.protocol === 'https:';
+    const defaultPort = isHttps ? 443 : 6333;
+    const port = url.port ? parseInt(url.port) : defaultPort;
+    
     this.qdrant = new QdrantClient({
-      url: config.qdrantUrl,
+      host: url.hostname,
+      port: port,
+      https: isHttps,
       apiKey: config.qdrantApiKey,
     });
     this.collectionName = config.collectionName;

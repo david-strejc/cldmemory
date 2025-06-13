@@ -7,8 +7,16 @@ export class QdrantService {
   private collectionName: string;
 
   constructor() {
+    // Parse the URL to extract protocol, host, and port
+    const url = new URL(config.QDRANT_URL);
+    const isHttps = url.protocol === 'https:';
+    const defaultPort = isHttps ? 443 : 6333;
+    const port = url.port ? parseInt(url.port) : defaultPort;
+    
     this.client = new QdrantClient({
-      url: config.QDRANT_URL,
+      host: url.hostname,
+      port: port,
+      https: isHttps,
       apiKey: config.QDRANT_API_KEY,
       checkCompatibility: false,
     });
