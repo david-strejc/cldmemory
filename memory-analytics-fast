@@ -3,15 +3,24 @@
 # Fast Memory Analytics CLI Tool (Sampling-based)
 # Usage: ./memory-analytics-fast [command] [options]
 
-# Configuration from your MCP config
-QDRANT_URL="http://memory.apertia.ai:6333"
-QDRANT_API_KEY="otUlPIRfOAwmTwSUYQnHpVHL13kXF0X36YiSgjHHgII="
-COLLECTION_NAME="human_memories"
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+  export $(cat .env | grep -v '^#' | xargs)
+fi
 
-# Allow overrides via environment variables
-QDRANT_URL="${MEMORY_QDRANT_URL:-$QDRANT_URL}"
-QDRANT_API_KEY="${MEMORY_QDRANT_API_KEY:-$QDRANT_API_KEY}"
-COLLECTION_NAME="${MEMORY_COLLECTION_NAME:-$COLLECTION_NAME}"
+# Use environment variables (no hardcoded values)
+if [ -z "$QDRANT_URL" ]; then
+  echo "Error: QDRANT_URL not set. Please configure .env file or set environment variables."
+  echo "Example: export QDRANT_URL=https://memory.apertia.ai"
+  exit 1
+fi
+
+if [ -z "$QDRANT_API_KEY" ]; then
+  echo "Error: QDRANT_API_KEY not set. Please configure .env file or set environment variables."
+  exit 1
+fi
+
+COLLECTION_NAME="${QDRANT_COLLECTION_NAME:-human_memories}"
 
 # Run the fast analytics tool
 node dist/cli/memory-analytics-fast.js \

@@ -7,7 +7,20 @@ A comprehensive CLI tool for analyzing memories stored in the Qdrant vector data
 ```bash
 npm install
 npm run build
+
+# Copy and configure environment variables
+cp .env.example .env
+# Edit .env with your Qdrant credentials
 ```
+
+## Configuration
+
+The analytics tools now require environment variables to be set. No API keys are hardcoded.
+
+**Required environment variables:**
+- `QDRANT_URL` - Your Qdrant instance URL (e.g., `https://memory.apertia.ai`)
+- `QDRANT_API_KEY` - Your Qdrant API key
+- `QDRANT_COLLECTION_NAME` - Collection name (defaults to `human_memories`)
 
 ## Usage
 
@@ -50,14 +63,14 @@ node dist/cli/memory-analytics.js \
   count
 ```
 
-### Environment variables
+### Using environment variables
 
-You can override the default connection settings using environment variables:
+The tools will automatically load from `.env` file if present, or you can set environment variables directly:
 
 ```bash
-export MEMORY_QDRANT_URL="http://custom-qdrant:6333"
-export MEMORY_QDRANT_API_KEY="your-api-key"
-export MEMORY_COLLECTION_NAME="custom_collection"
+export QDRANT_URL="https://custom-qdrant:6333"
+export QDRANT_API_KEY="your-api-key"
+export QDRANT_COLLECTION_NAME="custom_collection"
 ./memory-analytics count
 ```
 
