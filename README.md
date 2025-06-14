@@ -80,8 +80,10 @@ Available MCP tools (prefixed with `mcp__memory__`):
 
 ## Example Usage
 
-```
-# Store a memory
+**IMPORTANT**: All MCP tools expect JSON objects as parameters, NOT plain strings.
+
+```json
+// ✅ CORRECT - Store a memory with JSON object
 store_memory({
   "content": "Had lunch with Sarah at the Italian restaurant",
   "type": "episodic",
@@ -93,12 +95,18 @@ store_memory({
   "importance": 0.8
 })
 
-# Search memories
+// ❌ WRONG - Do not pass plain strings
+store_memory("Had lunch with Sarah")  // This will fail!
+
+// ✅ CORRECT - Search with JSON object
 search_memories({
   "query": "restaurant experiences",
   "limit": 5,
   "includeAssociations": true
 })
+
+// ❌ WRONG - Do not pass plain strings
+search_memories("restaurant experiences")  // This will fail!
 ```
 
 ### New Features

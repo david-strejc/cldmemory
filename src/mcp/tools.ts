@@ -3,7 +3,7 @@ import { MemoryType } from '../types/memory';
 
 export const tools = {
   store_memory: {
-    description: 'Store a new memory with BOTH summary and content. Summary should be 1-2 sentences capturing the essence. Content is the full detailed version. This dual approach saves context during searches. Use semantic type for facts/knowledge, episodic for events/experiences, procedural for how-to instructions. Always include relevant tags for better searchability. Set importance 0.8-1.0 for critical info, 0.5-0.7 for normal, 0.1-0.4 for minor details.',
+    description: 'Store a new memory. IMPORTANT: This tool expects a JSON object with the parameters, NOT a string. You must provide: {"content": "your memory text", "type": "semantic", ...}. Summary should be 1-2 sentences capturing the essence. Content is the full detailed version. This dual approach saves context during searches. Use semantic type for facts/knowledge, episodic for events/experiences, procedural for how-to instructions. Always include relevant tags for better searchability. Set importance 0.8-1.0 for critical info, 0.5-0.7 for normal, 0.1-0.4 for minor details.',
     inputSchema: z.object({
       summary: z.string().optional().describe('Short 1-2 sentence summary capturing the essence of the memory. If not provided, auto-generated from content.'),
       content: z.string().describe('Full detailed memory content'),
@@ -28,7 +28,7 @@ export const tools = {
   },
 
   store_memory_chunked: {
-    description: 'Store a large memory with automatic semantic chunking. Provide a summary for the entire memory and the full content will be chunked.',
+    description: 'Store a large memory with automatic semantic chunking. IMPORTANT: This tool expects a JSON object, NOT a string. Format: {"content": "long text", "type": "semantic", ...}. Provide a summary for the entire memory and the full content will be chunked.',
     inputSchema: z.object({
       summary: z.string().optional().describe('Short 1-2 sentence summary of the entire memory. If not provided, auto-generated.'),
       content: z.string().describe('The memory content (can be very long)'),
@@ -59,7 +59,7 @@ export const tools = {
   },
 
   search_memories: {
-    description: 'Search for memories using natural language. Returns memories sorted by relevance. Empty query returns all memories matching filters. Use lower similarityThreshold (0.2-0.3) for broader results, higher (0.5-0.7) for exact matches. Default threshold is configured in environment (currently 0.3).',
+    description: 'Search for memories using natural language. IMPORTANT: This tool expects a JSON object with parameters like {"query": "search text", "limit": 10}, NOT a plain string. Returns memories sorted by relevance. Empty query returns all memories matching filters. Use lower similarityThreshold (0.2-0.3) for broader results, higher (0.5-0.7) for exact matches. Default threshold is configured in environment (currently 0.3).',
     inputSchema: z.object({
       query: z.string().describe('Search query in natural language. Can be empty to return all memories matching other filters'),
       type: z.enum([
