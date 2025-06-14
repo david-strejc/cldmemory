@@ -72,8 +72,9 @@ claude -p "List available memory tools" --mcp-config claude-code-mcp.json
 Available MCP tools (prefixed with `mcp__memory__`):
 
 - `store_memory` - Store a new memory
-- `search_memories` - Search for memories using natural language
-- `get_memory` - Retrieve a specific memory
+- `search_memories` - Search for memories using natural language (returns full details)
+- `quick_search_memories` - Fast search returning only summaries for browsing
+- `get_memory` - Retrieve a specific memory by ID
 - `update_memory` - Update an existing memory
 - `delete_memory` - Delete a memory
 - `analyze_memories` - Analyze memory patterns
@@ -107,6 +108,17 @@ search_memories({
 
 // ❌ WRONG - Do not pass plain strings
 search_memories("restaurant experiences")  // This will fail!
+
+// ✅ CORRECT - Quick search for browsing (returns only summaries)
+quick_search_memories({
+  "query": "programming tips",
+  "limit": 50  // Can handle more results since only summaries
+})
+
+// Then get full details of a specific memory
+get_memory({
+  "id": "abc-123-def-456"  // Use ID from quick search results
+})
 ```
 
 ### New Features

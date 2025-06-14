@@ -8,7 +8,7 @@ import {
 import { z } from 'zod';
 
 import { MemoryService } from './services/memory';
-import { MemoryType } from './types/memory';
+import { MemoryType, MemorySearchParams } from './types/memory';
 import { tools } from './mcp/tools';
 import { config } from './config/environment';
 import { zodToJsonSchema } from './utils/zodToJsonSchema';
@@ -121,6 +121,42 @@ class MemoryMCPServer {
                 {
                   type: 'text',
                   text: JSON.stringify(memories, null, 2),
+                },
+              ],
+            };
+          }
+
+          case 'quick_search_memories': {
+            const parsed = tools.quick_search_memories.inputSchema.parse(args);
+            
+            // Use the existing search functionality but force compact mode
+            const searchParams: MemorySearchParams = {
+              query: parsed.query,
+              type: parsed.type as MemoryType | undefined,
+              minImportance: parsed.minImportance,
+              limit: parsed.limit || 20,
+              includeAssociations: false,
+              detailLevel: 'compact', // Always compact for quick search
+              similarityThreshold: 0.3, // Use default threshold
+            };
+            
+            const memories = await this.memoryService.searchMemories(searchParams);
+            
+            // Extract only the essential fields for quick browsing
+            const summaries = memories.map((m: any) => ({
+              id: m.id,
+              summary: m.summary,
+              type: m.type,
+              importance: m.importance,
+              timestamp: m.timestamp,
+              tags: m.tags || [],
+            }));
+            
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(summaries, null, 2),
                 },
               ],
             };

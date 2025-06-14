@@ -87,6 +87,23 @@ export const tools = {
     }),
   },
 
+  quick_search_memories: {
+    description: 'Quick search that returns ONLY summaries of memories for efficient browsing. IMPORTANT: This tool expects a JSON object like {"query": "search text", "limit": 20}. Returns just ID, summary, type, and importance - no full content. Use this for browsing many memories quickly, then use get_memory to retrieve full details of specific ones.',
+    inputSchema: z.object({
+      query: z.string().describe('Search query in natural language'),
+      type: z.enum([
+        'episodic',
+        'semantic', 
+        'procedural',
+        'emotional',
+        'sensory',
+        'working',
+      ]).optional().describe('Filter by memory type'),
+      limit: z.number().min(1).max(100).default(20).describe('Number of results (can be higher than regular search)'),
+      minImportance: z.number().min(0).max(1).optional().describe('Minimum importance filter'),
+    }),
+  },
+
   get_memory: {
     description: 'Retrieve a specific memory by ID',
     inputSchema: z.object({
