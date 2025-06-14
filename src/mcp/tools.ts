@@ -88,7 +88,7 @@ export const tools = {
   },
 
   quick_search_memories: {
-    description: 'Quick search that returns ONLY summaries of memories for efficient browsing. IMPORTANT: This tool expects a JSON object like {"query": "search text", "limit": 20}. Returns just ID, summary, type, and importance - no full content. Use this for browsing many memories quickly, then use get_memory to retrieve full details of specific ones.',
+    description: 'Quick search that returns ONLY summaries of memories for efficient browsing. IMPORTANT: This tool expects a JSON object like {"query": "search text", "limit": 20}. Returns ID, summary, type, importance, tags, and RELEVANCE SCORE (0-1) sorted by relevance - no full content. Use this for browsing many memories quickly, then use get_memory to retrieve full details of specific ones. The relevance score helps you understand how well each memory matches your search query.',
     inputSchema: z.object({
       query: z.string().describe('Search query in natural language'),
       type: z.enum([

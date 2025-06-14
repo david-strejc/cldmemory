@@ -129,34 +129,26 @@ class MemoryMCPServer {
           case 'quick_search_memories': {
             const parsed = tools.quick_search_memories.inputSchema.parse(args);
             
-            // Use the existing search functionality but force compact mode
+            // Use the search with scores functionality for quick browsing
             const searchParams: MemorySearchParams = {
               query: parsed.query,
               type: parsed.type as MemoryType | undefined,
               minImportance: parsed.minImportance,
               limit: parsed.limit || 20,
               includeAssociations: false,
-              detailLevel: 'compact', // Always compact for quick search
+              detailLevel: 'compact',
               similarityThreshold: 0.3, // Use default threshold
             };
             
-            const memories = await this.memoryService.searchMemories(searchParams);
+            const memoriesWithScores = await this.memoryService.searchMemoriesWithScores(searchParams);
             
-            // Extract only the essential fields for quick browsing
-            const summaries = memories.map((m: any) => ({
-              id: m.id,
-              summary: m.summary,
-              type: m.type,
-              importance: m.importance,
-              timestamp: m.timestamp,
-              tags: m.tags || [],
-            }));
+            // The results are already in compact format with relevance scores, sorted by score
             
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(summaries, null, 2),
+                  text: JSON.stringify(memoriesWithScores, null, 2),
                 },
               ],
             };

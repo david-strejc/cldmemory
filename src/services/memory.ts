@@ -1,11 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Memory, MemoryType, MemorySearchParams, MemoryContext, CompactMemory } from '../types/memory';
+import { Memory, MemoryType, MemorySearchParams, MemoryContext, CompactMemory, SystemMetadata, MemorySearchResult } from '../types/memory';
 import { QdrantService } from './qdrant';
 import { OpenAIService } from './openai';
 import { ChunkingService, ChunkingOptions, TextChunk } from './chunking';
 import { config } from '../config/environment';
 import * as os from 'os';
 import * as path from 'path';
+import { execSync } from 'child_process';
 
 export class MemoryService {
   private qdrant: QdrantService;
@@ -51,6 +52,33 @@ export class MemoryService {
     }
     
     return metadata;
+  }
+
+  private getSystemMetadata(): SystemMetadata {
+    const hostname = os.hostname();
+    const platform = os.platform();
+    let username = 'unknown';
+
+    try {
+      // Get username based on platform
+      if (platform === 'win32') {
+        // Windows: use USERNAME or USERPROFILE environment variable
+        username = process.env.USERNAME || process.env.USERPROFILE?.split('\\').pop() || 'unknown';
+      } else {
+        // Unix-like systems (Linux, macOS): use whoami command
+        username = execSync('whoami', { encoding: 'utf8' }).trim();
+      }
+    } catch (error) {
+      // Fallback to environment variable if command fails
+      username = process.env.USER || process.env.USERNAME || 'unknown';
+    }
+
+    return {
+      hostname,
+      username,
+      platform,
+      timestamp: new Date()
+    };
   }
 
   async initialize(): Promise<void> {
@@ -175,6 +203,7 @@ export class MemoryService {
       accessCount: 0,
       decay: 0,
       project: this.getProjectInfo(),
+      system_metadata: this.getSystemMetadata(),
     };
 
     const embedding = await this.openai.createEmbedding(this.prepareMemoryForEmbedding(memory));
@@ -347,6 +376,69 @@ export class MemoryService {
       emotionalValence: memory.emotionalValence,
       tags: memory.context.tags,
       project: memory.project
+    }));
+  }
+
+  async searchMemoriesWithScores(params: MemorySearchParams): Promise<CompactMemory[]> {
+    const filter: any = {
+      must: [],
+    };
+
+    if (params.type) {
+      filter.must.push({ key: 'type', match: { value: params.type } });
+    }
+
+    if (params.minImportance !== undefined) {
+      filter.must.push({ key: 'importance', range: { gte: params.minImportance } });
+    }
+
+    let searchResults: MemorySearchResult[] = [];
+    
+    if (!params.query || params.query.trim() === '') {
+      // No scores available for filter-only search
+      return [];
+    } else {
+      // Query provided - use similarity search with scores
+      const envMetadata = this.parseMemoryMetadata();
+      const metadataStr = Object.entries(envMetadata)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('; ');
+      const projectInfo = this.getProjectInfo();
+      
+      let enhancedQuery = params.query;
+      if (metadataStr) {
+        enhancedQuery += `\nMetadata: ${metadataStr}`;
+      }
+      enhancedQuery += `\nProject: ${projectInfo}`;
+      
+      const queryEmbedding = await this.openai.createEmbedding(enhancedQuery);
+      searchResults = await this.qdrant.searchSimilarWithScores(
+        queryEmbedding,
+        params.limit || 10,
+        filter.must.length > 0 ? filter : undefined,
+        params.similarityThreshold
+      );
+    }
+
+    // Update access patterns
+    for (const result of searchResults) {
+      await this.qdrant.updateMemoryMetadata(result.memory.id, {
+        lastAccessed: new Date(),
+        accessCount: result.memory.accessCount + 1,
+      });
+    }
+
+    // Convert to compact format with scores
+    return searchResults.map(result => ({
+      id: result.memory.id,
+      summary: result.memory.summary,
+      type: result.memory.type,
+      timestamp: result.memory.timestamp,
+      importance: result.memory.importance,
+      emotionalValence: result.memory.emotionalValence,
+      tags: result.memory.context.tags,
+      project: result.memory.project,
+      relevanceScore: result.score
     }));
   }
 
@@ -690,6 +782,10 @@ export class MemoryService {
     
     if (memory.project) {
       embeddingText += `\nProject: ${memory.project}`;
+    }
+
+    if (memory.system_metadata) {
+      embeddingText += `\nSystem: ${memory.system_metadata.hostname}, User: ${memory.system_metadata.username}, Platform: ${memory.system_metadata.platform}`;
     }
 
     return embeddingText;

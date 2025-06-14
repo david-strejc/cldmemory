@@ -1,6 +1,6 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { config, VECTOR_DIMENSION, DEFAULT_SIMILARITY_THRESHOLD } from '../config/environment';
-import { Memory } from '../types/memory';
+import { Memory, MemorySearchResult } from '../types/memory';
 
 export class QdrantService {
   private client: QdrantClient;
@@ -92,6 +92,45 @@ export class QdrantService {
         };
       })
       .filter((m): m is Memory => m !== null);
+  }
+
+  async searchSimilarWithScores(
+    embedding: number[],
+    limit: number = 10,
+    filter?: any,
+    threshold?: number
+  ): Promise<MemorySearchResult[]> {
+    // Use provided threshold or fall back to config or default
+    const similarityThreshold = threshold ?? config.SIMILARITY_THRESHOLD ?? DEFAULT_SIMILARITY_THRESHOLD;
+    
+    // Search with a higher limit to account for filtering
+    const searchLimit = Math.min(limit * 3, 100); // Search up to 3x requested or max 100
+    
+    const results = await this.client.search(this.collectionName, {
+      vector: embedding,
+      limit: searchLimit,
+      filter,
+      with_payload: true,
+      score_threshold: similarityThreshold,
+    });
+
+    // Filter by similarity score and limit results
+    return results
+      .filter(result => result.score >= similarityThreshold)
+      .slice(0, limit)
+      .map((result) => {
+        if (!result.payload) return null;
+        const memory: Memory = {
+          ...result.payload,
+          timestamp: new Date(result.payload.timestamp as string),
+          lastAccessed: new Date(result.payload.lastAccessed as string),
+        } as Memory;
+        return {
+          memory,
+          score: result.score
+        };
+      })
+      .filter((m): m is MemorySearchResult => m !== null);
   }
 
   async getMemory(id: string): Promise<Memory | null> {

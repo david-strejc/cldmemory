@@ -13,6 +13,14 @@ export interface Memory {
   accessCount: number;
   decay: number; // 0-1 scale, how much the memory has faded
   project?: string; // hostname + folder path
+  system_metadata?: SystemMetadata; // System info: hostname, username, OS
+}
+
+export interface SystemMetadata {
+  hostname: string;
+  username: string;
+  platform: string; // 'linux', 'darwin', 'win32', etc.
+  timestamp: Date;
 }
 
 export enum MemoryType {
@@ -60,6 +68,12 @@ export interface CompactMemory {
   emotionalValence: number;
   tags?: string[];
   project?: string; // hostname + folder path
+  relevanceScore?: number; // Similarity score from vector search (0-1)
+}
+
+export interface MemorySearchResult {
+  memory: Memory;
+  score: number; // Relevance/similarity score
 }
 
 export interface MemoryCluster {
