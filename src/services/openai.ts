@@ -86,30 +86,6 @@ export class OpenAIService {
     }
   }
 
-  async analyzeEmotion(text: string): Promise<number> {
-    try {
-      const response = await this.client.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'Analyze the emotional valence of this text. Return only a number between -1 (very negative) and 1 (very positive).',
-          },
-          {
-            role: 'user',
-            content: text,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 10,
-      });
-
-      const valence = parseFloat(response.choices[0].message.content || '0');
-      return Math.max(-1, Math.min(1, valence));
-    } catch (error) {
-      return 0;
-    }
-  }
 
   async summarizeTexts(texts: string[]): Promise<string> {
     try {

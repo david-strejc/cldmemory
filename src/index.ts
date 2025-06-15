@@ -56,7 +56,8 @@ class MemoryMCPServer {
               parsed.type as MemoryType,
               parsed.context,
               parsed.importance,
-              parsed.summary
+              parsed.summary,
+              parsed.emotionalValence
             );
             return {
               content: [
@@ -76,7 +77,8 @@ class MemoryMCPServer {
               parsed.context,
               parsed.importance,
               parsed.chunkingOptions,
-              parsed.summary
+              parsed.summary,
+              parsed.emotionalValence
             );
             return {
               content: [

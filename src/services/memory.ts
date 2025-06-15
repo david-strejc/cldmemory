@@ -91,7 +91,8 @@ export class MemoryService {
     context?: Partial<MemoryContext>,
     importance?: number,
     chunkingOptions?: ChunkingOptions,
-    summary?: string
+    summary?: string,
+    emotionalValence?: number
   ): Promise<Memory[]> {
     // Use semantic chunking by default for long content
     const options: ChunkingOptions = chunkingOptions || {
@@ -105,7 +106,7 @@ export class MemoryService {
     const estimatedTokens = Math.ceil(content.length / 4);
     if (estimatedTokens <= (options.maxChunkSize || 1000)) {
       // Content is small enough, create single memory
-      const memory = await this.createMemory(content, type, context, importance, summary);
+      const memory = await this.createMemory(content, type, context, importance, summary, emotionalValence);
       return [memory];
     }
     
@@ -120,7 +121,8 @@ export class MemoryService {
       type,
       { ...context, isParentChunk: true, totalChunks: chunks.length },
       importance || 0.8, // Parent chunks are generally important
-      parentSummary
+      parentSummary,
+      emotionalValence
     );
     memories.push(parentMemory);
     
@@ -143,7 +145,9 @@ export class MemoryService {
         chunk.content,
         type,
         chunkContext,
-        adjustedImportance
+        adjustedImportance,
+        undefined, // Let each chunk use default summary
+        emotionalValence // Pass the same emotional valence to all chunks
       );
       
       // Link chunk to parent
@@ -165,7 +169,8 @@ export class MemoryService {
     type: MemoryType,
     context?: Partial<MemoryContext>,
     importance?: number,
-    summary?: string
+    summary?: string,
+    emotionalValence?: number
   ): Promise<Memory> {
     // Validate content
     if (!content || content.trim().length === 0) {
@@ -175,6 +180,11 @@ export class MemoryService {
     // Validate importance
     if (importance !== undefined && (importance < 0 || importance > 1)) {
       throw new Error('Importance must be between 0 and 1');
+    }
+    
+    // Validate emotional valence
+    if (emotionalValence !== undefined && (emotionalValence < -1 || emotionalValence > 1)) {
+      throw new Error('Emotional valence must be between -1 and 1');
     }
     
     // Generate summary if not provided
@@ -190,7 +200,7 @@ export class MemoryService {
       type,
       timestamp: new Date(),
       importance: importance ?? this.calculateImportance(content, type),
-      emotionalValence: await this.openai.analyzeEmotion(content),
+      emotionalValence: emotionalValence ?? 0, // Default to neutral if not provided
       associations: [],
       context: {
         tags: await this.openai.extractKeywords(content),

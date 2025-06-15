@@ -24,6 +24,7 @@ export const tools = {
         source: z.string().optional().describe('Source of information'),
       }).optional().describe('Context of the memory'),
       importance: z.number().min(0).max(1).optional().describe('Importance (0-1)'),
+      emotionalValence: z.number().min(-1).max(1).optional().describe('Emotional valence (-1 to 1, where -1 is very negative, 0 is neutral, 1 is very positive)'),
     }),
   },
 
@@ -49,6 +50,7 @@ export const tools = {
         source: z.string().optional().describe('Source of information'),
       }).optional().describe('Context of the memory'),
       importance: z.number().min(0).max(1).optional().describe('Importance (0-1)'),
+      emotionalValence: z.number().min(-1).max(1).optional().describe('Emotional valence (-1 to 1, where -1 is very negative, 0 is neutral, 1 is very positive)'),
       chunkingOptions: z.object({
         method: z.enum(['semantic', 'fixed', 'sentence', 'paragraph']).default('semantic'),
         maxChunkSize: z.number().optional().describe('Maximum chunk size in tokens'),
