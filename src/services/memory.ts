@@ -482,6 +482,14 @@ export class MemoryService {
       throw new Error('Importance must be between 0 and 1');
     }
 
+    // Prevent setting context or metadata to null/undefined
+    if (updates.context === null || updates.context === undefined) {
+      delete updates.context;
+    }
+    if (updates.metadata === null || updates.metadata === undefined) {
+      delete updates.metadata;
+    }
+
     const updatedMemory = { ...memory, ...updates };
     
     if (updates.content) {
@@ -774,15 +782,15 @@ export class MemoryService {
   }
 
   private prepareMemoryForEmbedding(memory: Memory): string {
-    const contextStr = Object.entries(memory.context)
+    const contextStr = memory.context ? Object.entries(memory.context)
       .filter(([_, v]) => v)
       .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-      .join('; ');
+      .join('; ') : '';
     
-    const metadataStr = Object.entries(memory.metadata)
+    const metadataStr = memory.metadata ? Object.entries(memory.metadata)
       .filter(([_, v]) => v)
       .map(([k, v]) => `${k}: ${v}`)
-      .join('; ');
+      .join('; ') : '';
 
     let embeddingText = `${memory.content}\n\nType: ${memory.type}\nContext: ${contextStr}`;
     
