@@ -1,4 +1,14 @@
-import { OpenAIService } from './openai';
+// Neimportujeme přímo OpenAIService ani GeminiService zde,
+// protože ChunkingService bude přijímat instanci LLMService přes konstruktor.
+
+// NOVINKA: Definujeme interface pro LLM službu
+interface LLMService {
+  createEmbedding(text: string): Promise<number[]>;
+  createEmbeddings(texts: string[]): Promise<number[][]>;
+  extractKeywords(text: string): Promise<string[]>;
+  generateSummary(content: string): Promise<string>;
+  summarizeTexts(texts: string[]): Promise<string>;
+}
 
 export interface ChunkingOptions {
   method: 'semantic' | 'fixed' | 'sentence' | 'paragraph';
@@ -20,10 +30,11 @@ export interface TextChunk {
 }
 
 export class ChunkingService {
-  private openai: OpenAIService;
+  private llmService: LLMService; // Změna z 'openai' na obecný 'llmService'
   
-  constructor() {
-    this.openai = new OpenAIService();
+  // NOVINKA: Konstruktor nyní přijímá instanci LLMService
+  constructor(llmService: LLMService) {
+    this.llmService = llmService;
   }
 
   async chunkText(text: string, options: ChunkingOptions): Promise<TextChunk[]> {
@@ -60,7 +71,7 @@ export class ChunkingService {
     }
     
     // Generate embeddings for all sentence groups
-    const embeddings = await this.openai.createEmbeddings(sentenceGroups);
+    const embeddings = await this.llmService.createEmbeddings(sentenceGroups);
     
     // Build chunks based on semantic similarity
     let currentChunk: string[] = [sentences[0]];

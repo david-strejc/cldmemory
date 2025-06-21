@@ -20,6 +20,7 @@
     "analytics": "node dist/cli/memory-analytics.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@qdrant/js-client-rest": "^1.12.0",
     "chalk": "^4.1.2",

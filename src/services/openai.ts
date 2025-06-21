@@ -3,35 +3,59 @@ import { config } from '../config/environment';
 
 export class OpenAIService {
   private client: OpenAI;
+  private embeddingModel: string;
+  private chatModel: string;
 
   constructor() {
+    // Zde budeme přidávat kontrolu, zda je OpenAI skutečně aktivní LLM.
+    // Prozatím zajistíme, že model je vždy řetězec, i když je volitelný.
+    // Konfigurace `environment.ts` již zajišťuje, že alespoň jeden LLM je nastaven.
+    if (!config.OPENAI_API_KEY) {
+        // Měli bychom to ošetřit elegantněji, ale prozatím
+        // předpokládáme, že tento konstruktor bude volán pouze,
+        // pokud je OpenAI API klíč k dispozici (což zajistíme v MemoryService).
+        // Následující řádek je jen pro TypeScript, aby věděl, že OPENAI_API_KEY není undefined
+        throw new Error("OpenAI API Key is missing. OpenAIService cannot be initialized.");
+    }
+    if (!config.OPENAI_MODEL) {
+        // Podobně pro model.
+         throw new Error("OpenAI Model is missing. OpenAIService cannot be initialized.");
+    }
+
     this.client = new OpenAI({
       apiKey: config.OPENAI_API_KEY,
     });
+
+    // Nastavení modelů z konfigurace
+    this.embeddingModel = config.OPENAI_MODEL;
+    // Můžeš použít stejný model pro chat, nebo si přidat OPENAI_CHAT_MODEL do .env a configu
+    // Zde ponecháme pevně 'gpt-4o' pro chat, jak jsi to měl původně, pokud nechceš měnit chování.
+    // Jinak bys použil config.OPENAI_MODEL nebo novou proměnnou config.OPENAI_CHAT_MODEL.
+    this.chatModel = 'gpt-4o'; // Ponecháno jako ve tvém původním kódu
   }
 
   async createEmbedding(text: string): Promise<number[]> {
     try {
       const response = await this.client.embeddings.create({
-        model: config.OPENAI_MODEL,
+        model: this.embeddingModel, // Používáme this.embeddingModel, což je string
         input: text,
       });
-
       return response.data[0].embedding;
     } catch (error) {
-      throw error;
+      console.error('Error creating OpenAI embedding:', error);
+      throw error; // Důležité je chybu dál propagovat, aby se zamezilo tichému selhání
     }
   }
 
   async createEmbeddings(texts: string[]): Promise<number[][]> {
     try {
       const response = await this.client.embeddings.create({
-        model: config.OPENAI_MODEL,
+        model: this.embeddingModel, // Používáme this.embeddingModel
         input: texts,
       });
-
       return response.data.map((item) => item.embedding);
     } catch (error) {
+      console.error('Error creating OpenAI embeddings (batch):', error);
       throw error;
     }
   }
@@ -39,7 +63,7 @@ export class OpenAIService {
   async extractKeywords(text: string): Promise<string[]> {
     try {
       const response = await this.client.chat.completions.create({
-        model: 'gpt-4o',
+        model: this.chatModel, // Používáme this.chatModel
         messages: [
           {
             role: 'system',
@@ -54,17 +78,18 @@ export class OpenAIService {
         max_tokens: 50,
       });
 
-      const keywords = response.choices[0].message.content?.split(',').map(k => k.trim()) || [];
+      const keywords = response.choices[0].message.content?.split(',').map(k => k.trim()).filter(Boolean) || [];
       return keywords;
     } catch (error) {
-      return [];
+      console.error('Error extracting keywords with OpenAI:', error);
+      return []; // Vracíme prázdné pole, aby se neblokoval proces
     }
   }
 
   async generateSummary(text: string): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: 'gpt-4o',
+        model: this.chatModel, // Používáme this.chatModel
         messages: [
           {
             role: 'system',
@@ -79,18 +104,18 @@ export class OpenAIService {
         max_tokens: 60,
       });
 
-      return response.choices[0].message.content?.trim() || text.substring(0, 150) + '...';
+      return response.choices[0].message.content?.trim() || (text.length > 150 ? text.substring(0, 147) + '...' : text);
     } catch (error) {
-      // Fallback to truncation
+      console.error('Error generating summary with OpenAI:', error);
+      // Fallback na zkrácený text
       return text.length > 150 ? text.substring(0, 147) + '...' : text;
     }
   }
 
-
   async summarizeTexts(texts: string[]): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: 'gpt-4o',
+        model: this.chatModel, // Používáme this.chatModel
         messages: [
           {
             role: 'system',
@@ -107,6 +132,7 @@ export class OpenAIService {
 
       return response.choices[0].message.content || 'Summary generation failed';
     } catch (error) {
+      console.error('Error summarizing texts with OpenAI:', error);
       return `Combined memories: ${texts.map(t => t.substring(0, 50)).join('; ')}...`;
     }
   }

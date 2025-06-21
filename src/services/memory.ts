@@ -1,7 +1,19 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Memory, MemoryType, MemorySearchParams, MemoryContext, CompactMemory, SystemMetadata, MemorySearchResult } from '../types/memory';
 import { QdrantService } from './qdrant';
+
 import { OpenAIService } from './openai';
+import { GeminiService } from './gemini'; // NOVINKA: Import GeminiService
+
+// Definujeme interface pro LLM službu
+interface LLMService {
+  createEmbedding(text: string): Promise<number[]>;
+  createEmbeddings(texts: string[]): Promise<number[][]>; // Přidáno pro kompatibilitu
+  extractKeywords(text: string): Promise<string[]>;
+  generateSummary(content: string): Promise<string>;
+  summarizeTexts(texts: string[]): Promise<string>;
+}
+
 import { ChunkingService, ChunkingOptions, TextChunk } from './chunking';
 import { config } from '../config/environment';
 import * as os from 'os';
@@ -10,14 +22,30 @@ import { execSync } from 'child_process';
 
 export class MemoryService {
   private qdrant: QdrantService;
-  private openai: OpenAIService;
+  private llmService: LLMService; // Změna z 'openai' na obecný 'llmService'
   private chunking: ChunkingService;
+  private vectorDimension: number; // NOVINKA: Proměnná pro dimenzi vektoru embeddingu
 
   constructor() {
-    this.qdrant = new QdrantService();
-    this.openai = new OpenAIService();
-    this.chunking = new ChunkingService();
-  }
+    // Dynamický výběr LLM služby na základě konfigurace v .env
+    if (config.GEMINI_API_KEY && config.GEMINI_MODEL) {
+      this.llmService = new GeminiService();
+      this.vectorDimension = 768; // Dimenze pro Gemini embedding-001
+      console.log("Using Google Gemini for LLM operations.");
+    } else if (config.OPENAI_API_KEY && config.OPENAI_MODEL) {
+      this.llmService = new OpenAIService();
+      this.vectorDimension = 1536; // Dimenze pro OpenAI text-embedding-3-small
+      console.log("Using OpenAI for LLM operations.");
+    } else {
+      throw new Error("No valid LLM API key and model configured. Please set OPENAI_API_KEY/OPENAI_MODEL or GEMINI_API_KEY/GEMINI_MODEL in your .env file.");
+    }
+  
+    // NOVINKA: Nyní inicializujeme ChunkingService s vybranou llmService
+    this.chunking = new ChunkingService(this.llmService);
+  
+    // Nyní inicializujeme QdrantService s určenou dimenzí
+    this.qdrant = new QdrantService(this.vectorDimension);
+    }
 
   private getProjectInfo(): string {
     const hostname = os.hostname();
@@ -203,7 +231,7 @@ export class MemoryService {
       emotionalValence: emotionalValence ?? 0, // Default to neutral if not provided
       associations: [],
       context: {
-        tags: await this.openai.extractKeywords(content),
+        tags: await this.llmService.extractKeywords(content),
         ...context,
       },
       metadata: {
@@ -216,7 +244,7 @@ export class MemoryService {
       system_metadata: this.getSystemMetadata(),
     };
 
-    const embedding = await this.openai.createEmbedding(this.prepareMemoryForEmbedding(memory));
+    const embedding = await this.llmService.createEmbedding(this.prepareMemoryForEmbedding(memory));
     await this.qdrant.upsertMemory(memory, embedding);
 
     // Find and link associations
@@ -331,7 +359,7 @@ export class MemoryService {
       }
       enhancedQuery += `\nProject: ${projectInfo}`;
       
-      const queryEmbedding = await this.openai.createEmbedding(enhancedQuery);
+      const queryEmbedding = await this.llmService.createEmbedding(enhancedQuery);
       memories = await this.qdrant.searchSimilar(
         queryEmbedding,
         params.limit || 10,
@@ -421,7 +449,7 @@ export class MemoryService {
       }
       enhancedQuery += `\nProject: ${projectInfo}`;
       
-      const queryEmbedding = await this.openai.createEmbedding(enhancedQuery);
+      const queryEmbedding = await this.llmService.createEmbedding(enhancedQuery);
       searchResults = await this.qdrant.searchSimilarWithScores(
         queryEmbedding,
         params.limit || 10,
@@ -493,7 +521,7 @@ export class MemoryService {
     const updatedMemory = { ...memory, ...updates };
     
     if (updates.content) {
-      const embedding = await this.openai.createEmbedding(
+      const embedding = await this.llmService.createEmbedding(
         this.prepareMemoryForEmbedding(updatedMemory)
       );
       await this.qdrant.upsertMemory(updatedMemory, embedding);
@@ -573,7 +601,7 @@ export class MemoryService {
         consolidatedImportance = Math.max(...validMemories.map(m => m.importance));
         break;
       case 'summarize':
-        consolidatedContent = await this.openai.summarizeTexts(validMemories.map(m => m.content));
+        consolidatedContent = await this.llmService.summarizeTexts(validMemories.map(m => m.content));
         consolidatedImportance = validMemories.reduce((sum, m) => sum + m.importance, 0) / validMemories.length;
         break;
       case 'keep_most_important':
@@ -778,7 +806,7 @@ export class MemoryService {
 
   private async generateSummary(content: string): Promise<string> {
     // Use OpenAI to generate proper summary
-    return await this.openai.generateSummary(content);
+    return await this.llmService.generateSummary(content);
   }
 
   private prepareMemoryForEmbedding(memory: Memory): string {
@@ -828,7 +856,7 @@ export class MemoryService {
 
   private async updateAssociations(memory: Memory): Promise<void> {
     // Find related memories
-    const embedding = await this.openai.createEmbedding(
+    const embedding = await this.llmService.createEmbedding(
       this.prepareMemoryForEmbedding(memory)
     );
     
