@@ -1,4 +1,10 @@
-import { OpenAIService } from './openai';
+interface LLMService {
+  createEmbedding(text: string): Promise<number[]>;
+  createEmbeddings(texts: string[]): Promise<number[][]>;
+  extractKeywords(text: string): Promise<string[]>;
+  generateSummary(content: string): Promise<string>;
+  summarizeTexts(texts: string[]): Promise<string>;
+}
 
 export interface ChunkingOptions {
   method: 'semantic' | 'fixed' | 'sentence' | 'paragraph';
@@ -20,10 +26,10 @@ export interface TextChunk {
 }
 
 export class ChunkingService {
-  private openai: OpenAIService;
-  
-  constructor() {
-    this.openai = new OpenAIService();
+  private llmService: LLMService; // Change from 'openai' to general 'llmService'
+
+  constructor(llmService: LLMService) {
+    this.llmService = llmService;
   }
 
   async chunkText(text: string, options: ChunkingOptions): Promise<TextChunk[]> {
@@ -60,7 +66,7 @@ export class ChunkingService {
     }
     
     // Generate embeddings for all sentence groups
-    const embeddings = await this.openai.createEmbeddings(sentenceGroups);
+    const embeddings = await this.llmService.createEmbeddings(sentenceGroups);
     
     // Build chunks based on semantic similarity
     let currentChunk: string[] = [sentences[0]];

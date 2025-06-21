@@ -1,27 +1,29 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { config, VECTOR_DIMENSION, DEFAULT_SIMILARITY_THRESHOLD } from '../config/environment';
+import { config, DEFAULT_SIMILARITY_THRESHOLD } from '../config/environment';
 import { Memory, MemorySearchResult } from '../types/memory';
 
 export class QdrantService {
-  private client: QdrantClient;
-  private collectionName: string;
-
-  constructor() {
-    // Parse the URL to extract protocol, host, and port
-    const url = new URL(config.QDRANT_URL);
-    const isHttps = url.protocol === 'https:';
-    const defaultPort = isHttps ? 443 : 6333;
-    const port = url.port ? parseInt(url.port) : defaultPort;
-    
-    this.client = new QdrantClient({
-      host: url.hostname,
-      port: port,
-      https: isHttps,
-      apiKey: config.QDRANT_API_KEY,
-      checkCompatibility: false,
-    });
-    this.collectionName = config.QDRANT_COLLECTION_NAME;
-  }
+    private client: QdrantClient;
+    private collectionName: string;
+    private vectorDimension: number;
+  
+    constructor(vectorDimension: number) {
+      // Parse the URL to extract protocol, host, and port
+      const url = new URL(config.QDRANT_URL);
+      const isHttps = url.protocol === 'https:';
+      const defaultPort = isHttps ? 443 : 6333;
+      const port = url.port ? parseInt(url.port) : defaultPort;
+  
+      this.client = new QdrantClient({
+        host: url.hostname,
+        port: port,
+        https: isHttps,
+        apiKey: config.QDRANT_API_KEY,
+        checkCompatibility: false,
+      });
+      this.collectionName = config.QDRANT_COLLECTION_NAME;
+      this.vectorDimension = vectorDimension;
+    }
 
   async initialize(): Promise<void> {
     try {
@@ -31,12 +33,12 @@ export class QdrantService {
       );
 
       if (!exists) {
-        await this.client.createCollection(this.collectionName, {
-          vectors: {
-            size: VECTOR_DIMENSION,
-            distance: 'Cosine',
-          },
-        });
+      	 await this.client.createCollection(this.collectionName, {
+        	 vectors: {
+            	 size: this.vectorDimension,
+                 distance: 'Cosine',
+             },
+         });
       }
     } catch (error) {
       throw error;

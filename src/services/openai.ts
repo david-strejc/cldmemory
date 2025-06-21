@@ -3,22 +3,34 @@ import { config } from '../config/environment';
 
 export class OpenAIService {
   private client: OpenAI;
+  private embeddingModel: string;
+  private chatModel: string;
 
   constructor() {
+    if (!config.OPENAI_API_KEY) {
+        throw new Error("OpenAI API Key is missing. OpenAIService cannot be initialized.");
+    }
+    if (!config.OPENAI_MODEL) {
+         throw new Error("OpenAI Model is missing. OpenAIService cannot be initialized.");
+    }
+
     this.client = new OpenAI({
       apiKey: config.OPENAI_API_KEY,
     });
+
+    this.embeddingModel = config.OPENAI_MODEL;
+    this.chatModel = 'gpt-4o';
   }
 
   async createEmbedding(text: string): Promise<number[]> {
     try {
       const response = await this.client.embeddings.create({
-        model: config.OPENAI_MODEL,
+        model: this.embeddingModel,
         input: text,
       });
-
       return response.data[0].embedding;
     } catch (error) {
+      console.error('Error creating OpenAI embedding:', error);
       throw error;
     }
   }
@@ -26,12 +38,12 @@ export class OpenAIService {
   async createEmbeddings(texts: string[]): Promise<number[][]> {
     try {
       const response = await this.client.embeddings.create({
-        model: config.OPENAI_MODEL,
+        model: this.embeddingModel,
         input: texts,
       });
-
       return response.data.map((item) => item.embedding);
     } catch (error) {
+      console.error('Error creating OpenAI embeddings (batch):', error);
       throw error;
     }
   }
@@ -39,7 +51,7 @@ export class OpenAIService {
   async extractKeywords(text: string): Promise<string[]> {
     try {
       const response = await this.client.chat.completions.create({
-        model: 'gpt-4o',
+        model: this.chatModel,
         messages: [
           {
             role: 'system',
@@ -54,9 +66,10 @@ export class OpenAIService {
         max_tokens: 50,
       });
 
-      const keywords = response.choices[0].message.content?.split(',').map(k => k.trim()) || [];
+      const keywords = response.choices[0].message.content?.split(',').map(k => k.trim()).filter(Boolean) || [];
       return keywords;
     } catch (error) {
+      console.error('Error extracting keywords with OpenAI:', error);
       return [];
     }
   }
@@ -64,7 +77,7 @@ export class OpenAIService {
   async generateSummary(text: string): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: 'gpt-4o',
+        model: this.chatModel,
         messages: [
           {
             role: 'system',
@@ -79,18 +92,17 @@ export class OpenAIService {
         max_tokens: 60,
       });
 
-      return response.choices[0].message.content?.trim() || text.substring(0, 150) + '...';
+      return response.choices[0].message.content?.trim() || (text.length > 150 ? text.substring(0, 147) + '...' : text);
     } catch (error) {
-      // Fallback to truncation
+      console.error('Error generating summary with OpenAI:', error);
       return text.length > 150 ? text.substring(0, 147) + '...' : text;
     }
   }
 
-
   async summarizeTexts(texts: string[]): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: 'gpt-4o',
+        model: this.chatModel,
         messages: [
           {
             role: 'system',
@@ -107,6 +119,7 @@ export class OpenAIService {
 
       return response.choices[0].message.content || 'Summary generation failed';
     } catch (error) {
+      console.error('Error summarizing texts with OpenAI:', error);
       return `Combined memories: ${texts.map(t => t.substring(0, 50)).join('; ')}...`;
     }
   }
