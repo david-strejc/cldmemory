@@ -11,7 +11,7 @@ export class GeminiService {
       throw new Error("Gemini API key or model is not configured. Please check your .env file.");
     }
     this.genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY);
-    this.embeddingModel = 'embedding-001'; // Google Gemini pro embeddingy doporučuje 'embedding-001'
+    this.embeddingModel = 'embedding-001'; // Google Gemini recommends ‘embedding-001’ for embeddings
     this.chatModel = config.GEMINI_MODEL;
   }
 

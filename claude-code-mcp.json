@@ -1,18 +1,6 @@
 {
-  "mcpServers": {
-    "memory": {
-      "command": "node",
-      "args": ["/home/david/Work/Programming/cldmemory/dist/index.js"],
-      "env": {
-        "NODE_ENV": "production",
-        "QDRANT_URL": "http://localhost:6333",
-        "QDRANT_API_KEY": "",
-        "QDRANT_COLLECTION_NAME": "human_memories",
-        "OPENAI_API_KEY": "",
-        "OPENAI_MODEL": "text-embedding-3-small",
-        "MCP_SERVER_NAME": "memory-server",
-        "MCP_SERVER_PORT": "3000"
-      }
-    }
-  }
+  "name": "cc_memory-server",
+  "serverType": "http",
+  "host": "localhost",
+  "port": 3000
 }

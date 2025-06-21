@@ -1,31 +1,27 @@
 import { MemoryService } from '../services/memory';
 import { QdrantService } from '../services/qdrant';
-import { config } from '../config/environment'; // NOVINKA: Potřebujeme config pro určení dimenze
-import { OpenAIService } from '../services/openai'; // Potřebujeme pro zjištění dimenze
-import { GeminiService } from '../services/gemini'; // Potřebujeme pro zjištění dimenze
+import { config } from '../config/environment';
+import { OpenAIService } from '../services/openai';
+import { GeminiService } from '../services/gemini';
 
 async function migrateSummaries() {
   console.log('Starting summary migration...');
 
-  // NOVINKA: Určíme dimenzi vektoru na základě konfigurace v .env
   let vectorDimension: number;
   if (config.GEMINI_API_KEY && config.GEMINI_MODEL) {
-    vectorDimension = 768; // Dimenze pro Gemini embedding-001
+    vectorDimension = 768; // Dimension for Gemini embedding-001
   } else if (config.OPENAI_API_KEY && config.OPENAI_MODEL) {
-    vectorDimension = 1536; // Dimenze pro OpenAI text-embedding-3-small
+    vectorDimension = 1536; // Dimension for OpenAI text-embedding-3-small
   } else {
-    // Toto by se nemělo stát, protože environment.ts již kontroluje existenci alespoň jednoho klíče
     console.error("Error: No valid LLM API key and model configured for migration script. Please set OPENAI_API_KEY/OPENAI_MODEL or GEMINI_API_KEY/GEMINI_MODEL in your .env file.");
     process.exit(1);
   }
 
-  // NOVINKA: QdrantService teď dostává vectorDimension
   const qdrantService = new QdrantService(vectorDimension);
 
-  // MemoryService si inicializuje LLMService uvnitř sebe, nemusíme jí předávat nic
   const memoryService = new MemoryService();
 
-  await memoryService.initialize(); // Inicializace MemoryService také inicializuje QdrantService a vybere LLM
+  await memoryService.initialize();
   
   try {
     // Get all memories using search with empty query

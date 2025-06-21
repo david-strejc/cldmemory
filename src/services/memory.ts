@@ -3,12 +3,11 @@ import { Memory, MemoryType, MemorySearchParams, MemoryContext, CompactMemory, S
 import { QdrantService } from './qdrant';
 
 import { OpenAIService } from './openai';
-import { GeminiService } from './gemini'; // NOVINKA: Import GeminiService
+import { GeminiService } from './gemini';
 
-// Definujeme interface pro LLM službu
 interface LLMService {
   createEmbedding(text: string): Promise<number[]>;
-  createEmbeddings(texts: string[]): Promise<number[][]>; // Přidáno pro kompatibilitu
+  createEmbeddings(texts: string[]): Promise<number[][]>;
   extractKeywords(text: string): Promise<string[]>;
   generateSummary(content: string): Promise<string>;
   summarizeTexts(texts: string[]): Promise<string>;
@@ -22,28 +21,25 @@ import { execSync } from 'child_process';
 
 export class MemoryService {
   private qdrant: QdrantService;
-  private llmService: LLMService; // Změna z 'openai' na obecný 'llmService'
+  private llmService: LLMService; // Change from 'openai' to general 'llmService'
   private chunking: ChunkingService;
-  private vectorDimension: number; // NOVINKA: Proměnná pro dimenzi vektoru embeddingu
+  private vectorDimension: number;
 
   constructor() {
-    // Dynamický výběr LLM služby na základě konfigurace v .env
     if (config.GEMINI_API_KEY && config.GEMINI_MODEL) {
       this.llmService = new GeminiService();
-      this.vectorDimension = 768; // Dimenze pro Gemini embedding-001
+      this.vectorDimension = 768; // Dimension for Gemini embedding-001
       console.log("Using Google Gemini for LLM operations.");
     } else if (config.OPENAI_API_KEY && config.OPENAI_MODEL) {
       this.llmService = new OpenAIService();
-      this.vectorDimension = 1536; // Dimenze pro OpenAI text-embedding-3-small
+      this.vectorDimension = 1536; // Dimension for OpenAI text-embedding-3-small
       console.log("Using OpenAI for LLM operations.");
     } else {
       throw new Error("No valid LLM API key and model configured. Please set OPENAI_API_KEY/OPENAI_MODEL or GEMINI_API_KEY/GEMINI_MODEL in your .env file.");
     }
   
-    // NOVINKA: Nyní inicializujeme ChunkingService s vybranou llmService
     this.chunking = new ChunkingService(this.llmService);
   
-    // Nyní inicializujeme QdrantService s určenou dimenzí
     this.qdrant = new QdrantService(this.vectorDimension);
     }
 

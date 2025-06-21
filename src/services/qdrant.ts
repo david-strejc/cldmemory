@@ -5,9 +5,9 @@ import { Memory, MemorySearchResult } from '../types/memory';
 export class QdrantService {
     private client: QdrantClient;
     private collectionName: string;
-    private vectorDimension: number; // NOVINKA: Instanční proměnná pro dimenzi vektoru
+    private vectorDimension: number;
   
-    constructor(vectorDimension: number) { // Nyní konstruktor přijímá dimenzi
+    constructor(vectorDimension: number) {
       // Parse the URL to extract protocol, host, and port
       const url = new URL(config.QDRANT_URL);
       const isHttps = url.protocol === 'https:';
@@ -22,7 +22,7 @@ export class QdrantService {
         checkCompatibility: false,
       });
       this.collectionName = config.QDRANT_COLLECTION_NAME;
-      this.vectorDimension = vectorDimension; // Uložíme dimenzi z konstruktoru
+      this.vectorDimension = vectorDimension;
     }
 
   async initialize(): Promise<void> {
@@ -35,7 +35,7 @@ export class QdrantService {
       if (!exists) {
       	 await this.client.createCollection(this.collectionName, {
         	 vectors: {
-            	 size: this.vectorDimension, // Nyní použijeme dimenzi z instanční proměnné
+            	 size: this.vectorDimension,
                  distance: 'Cosine',
              },
          });

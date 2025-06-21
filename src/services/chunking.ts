@@ -1,7 +1,3 @@
-// Neimportujeme přímo OpenAIService ani GeminiService zde,
-// protože ChunkingService bude přijímat instanci LLMService přes konstruktor.
-
-// NOVINKA: Definujeme interface pro LLM službu
 interface LLMService {
   createEmbedding(text: string): Promise<number[]>;
   createEmbeddings(texts: string[]): Promise<number[][]>;
@@ -30,9 +26,8 @@ export interface TextChunk {
 }
 
 export class ChunkingService {
-  private llmService: LLMService; // Změna z 'openai' na obecný 'llmService'
-  
-  // NOVINKA: Konstruktor nyní přijímá instanci LLMService
+  private llmService: LLMService; // Change from 'openai' to general 'llmService'
+
   constructor(llmService: LLMService) {
     this.llmService = llmService;
   }
